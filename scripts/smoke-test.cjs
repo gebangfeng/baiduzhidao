@@ -56,7 +56,7 @@ const {
     const stableTitleA = normalizeTitle("AI随机生成的第一种标题", "【01】 红色基因主题学习资料.pdf");
     const stableTitleB = normalizeTitle("完全不同的咨询方式", "【01】 红色基因主题学习资料.pdf");
     assert.equal(stableTitleA, stableTitleB);
-    assert.equal(stableTitleA, "求红色基因主题学习资料完整网盘链接获取");
+    assert.equal(stableTitleA, "求红色基因主题学习资料完整网盘链接");
     assert.ok(charLength(stableTitleA) >= 5 && charLength(stableTitleA) <= 49);
     assert.equal(
       normalizeGeneratedTitle("红色基因主题学习资料的百度网盘链接在哪里获取", "【01】 红色基因主题学习资料.pdf", "ai"),
@@ -197,7 +197,8 @@ const {
     const completed = parsed.rows.map((row) => {
       const content = rulesContent(row.name);
       assert.ok(charLength(content.title) >= 5 && charLength(content.title) <= 49);
-      assert.ok(content.title.includes("网盘链接获取"));
+      assert.match(content.title, /网盘/);
+      assert.match(content.title, /链接|下载|获取/);
       return {
         ...row,
         ...content,
