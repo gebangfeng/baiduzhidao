@@ -1,0 +1,136 @@
+name: Build desktop installers
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows-x64:
+    name: Windows x64
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.22.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Set app version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: pnpm version --no-git-tag-version --allow-same-version "${{ github.ref_name }}"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install bundled Chromium
+        run: pnpm exec cross-env PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium
+
+      - name: Check project
+        run: pnpm run check
+
+      - name: Build Windows installer
+        run: pnpm run pack:win
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: |
+            release/*Windows-x64.exe
+            release/*Windows-x64.exe.blockmap
+            release/latest.yml
+          if-no-files-found: error
+
+  macos-arm64:
+    name: macOS Apple Silicon
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.22.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Set app version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: pnpm version --no-git-tag-version --allow-same-version "${{ github.ref_name }}"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install bundled Chromium
+        run: pnpm exec cross-env PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium
+
+      - name: Build renderer
+        run: pnpm run build:renderer
+
+      - name: Build unsigned macOS DMG
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: pnpm run pack:mac
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64
+          path: release/*macOS-arm64.dmg
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - windows-x64
+      - macos-arm64
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Show release assets
+        run: find release-assets -maxdepth 2 -type f -print
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release-assets/* --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$RELEASE_TAG" release-assets/* \
+              --verify-tag \
+              --generate-notes \
+              --title "知道助手 $RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY"
+          fi

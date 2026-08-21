@@ -1,0 +1,95 @@
+{
+  "name": "wangpan-qa-studio",
+  "version": "2.0.7",
+  "private": true,
+  "description": "网盘素材问答批量转换客户端",
+  "main": "electron/main.cjs",
+  "author": "Local User",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
+    "license:server": "npm --prefix license-server start",
+    "build:renderer": "vite build",
+    "check": "cross-env ELECTRON_RUN_AS_NODE=1 node_modules/electron/dist/electron.exe scripts/service-config-test.cjs && cross-env ELECTRON_RUN_AS_NODE=1 node_modules/electron/dist/electron.exe scripts/license-flow-test.cjs && node scripts/title-engine-test.cjs && cross-env ELECTRON_RUN_AS_NODE=1 node_modules/electron/dist/electron.exe scripts/smoke-test.cjs && vite build",
+    "test:database": "cross-env ELECTRON_RUN_AS_NODE=1 node_modules/electron/dist/electron.exe scripts/database-test.cjs",
+    "pack:win": "vite build && electron-builder --win nsis",
+    "pack:win:configurable-api": "vite build && node scripts/pack-configurable-api.cjs nsis",
+    "pack:mac": "vite build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ electron-builder --mac dir --arm64 && node scripts/create-mac-dmg.cjs arm64",
+    "pack:mac:dir": "vite build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ electron-builder --mac dir --arm64",
+    "pack:portable": "vite build && electron-builder --win portable",
+    "pack:portable:configurable-api": "vite build && node scripts/pack-configurable-api.cjs portable",
+    "update:manifest": "node scripts/generate-update-manifest.cjs"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "playwright": "1.54.1",
+    "playwright-core": "1.54.1",
+    "vue": "^3.5.22"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "41.7.1",
+    "electron-builder": "^26.0.12",
+    "vite": "^7.1.7",
+    "wait-on": "^9.0.1"
+  },
+  "build": {
+    "appId": "cn.local.wangpan.qa",
+    "electronDist": "node_modules/electron/dist",
+    "productName": "知道助手",
+    "asar": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "node_modules/playwright/**/*",
+      "node_modules/playwright-core/**/*",
+      "!node_modules/playwright-core/.local-browsers/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "使用说明.txt",
+        "to": "使用说明.txt"
+      },
+      {
+        "from": "node_modules/playwright-core/.local-browsers",
+        "to": "playwright-browsers"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-Windows-${arch}.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-macOS-${arch}.${ext}",
+      "category": "public.app-category.productivity"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "知道助手"
+    }
+  }
+}
