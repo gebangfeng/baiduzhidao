@@ -6,11 +6,12 @@ const { spawnSync } = require("node:child_process");
 const rootDir = path.resolve(__dirname, "..");
 const packageJson = require(path.join(rootDir, "package.json"));
 const productName = packageJson.build?.productName || packageJson.name;
+const artifactProductName = "zhidao-assistant";
 const version = packageJson.version;
 const arch = process.argv[2] || process.arch;
 const releaseDir = path.join(rootDir, "release");
 const appPath = path.join(releaseDir, `mac-${arch}`, `${productName}.app`);
-const dmgPath = path.join(releaseDir, `${productName}-${version}-macOS-${arch}.dmg`);
+const dmgPath = path.join(releaseDir, `${artifactProductName}-${version}-macOS-${arch}.dmg`);
 const stageDir = fs.mkdtempSync(path.join(os.tmpdir(), `${packageJson.name}-dmg-`));
 
 function run(command, args) {

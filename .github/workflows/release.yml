@@ -58,8 +58,8 @@ jobs:
         with:
           name: windows-x64
           path: |
-            release/*Windows-x64.exe
-            release/*Windows-x64.exe.blockmap
+            release/zhidao-assistant-*-Windows-x64.exe
+            release/zhidao-assistant-*-Windows-x64.exe.blockmap
             release/latest.yml
           if-no-files-found: error
 
@@ -104,7 +104,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: macos-arm64
-          path: release/*macOS-arm64.dmg
+          path: release/zhidao-assistant-*-macOS-arm64.dmg
           if-no-files-found: error
 
   publish:

@@ -70,7 +70,7 @@
           ]
         }
       ],
-      "artifactName": "${productName}-${version}-Windows-${arch}.${ext}"
+      "artifactName": "zhidao-assistant-${version}-Windows-${arch}.${ext}"
     },
     "mac": {
       "target": [
@@ -81,7 +81,7 @@
           ]
         }
       ],
-      "artifactName": "${productName}-${version}-macOS-${arch}.${ext}",
+      "artifactName": "zhidao-assistant-${version}-macOS-${arch}.${ext}",
       "category": "public.app-category.productivity"
     },
     "nsis": {
