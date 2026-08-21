@@ -49,7 +49,7 @@ jobs:
         run: pnpm run check
 
       - name: Build Windows installer
-        run: pnpm run pack:win
+        run: pnpm run pack:win -- --publish never
 
       - uses: actions/upload-artifact@v4
         with:
@@ -93,7 +93,7 @@ jobs:
       - name: Build unsigned macOS DMG
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-        run: pnpm run pack:mac
+        run: pnpm run pack:mac -- --publish never
 
       - uses: actions/upload-artifact@v4
         with:
