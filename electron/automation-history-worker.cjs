@@ -15,6 +15,39 @@ const userDataDirectory = automationDataDirectory
   ? path.join(automationDataDirectory, "browser-profile")
   : "";
 
+function findBundledChromiumExecutable() {
+  const roots = [
+    process.env.PLAYWRIGHT_BROWSERS_PATH,
+    process.resourcesPath ? path.join(process.resourcesPath, "playwright-browsers") : "",
+  ].map((item) => String(item || "").trim()).filter((item) => item && item !== "0");
+
+  const relativePath = process.platform === "darwin"
+    ? path.join("chrome-mac", "Chromium.app", "Contents", "MacOS", "Chromium")
+    : process.platform === "win32"
+      ? path.join("chrome-win", "chrome.exe")
+      : path.join("chrome-linux", "chrome");
+
+  for (const root of roots) {
+    let entries = [];
+    try {
+      entries = fs.readdirSync(root, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    const chromiumDirectories = entries
+      .filter((entry) => entry.isDirectory() && /^chromium-\d+/.test(entry.name))
+      .map((entry) => entry.name)
+      .sort()
+      .reverse();
+    for (const directory of chromiumDirectories) {
+      const executablePath = path.join(root, directory, relativePath);
+      if (fs.existsSync(executablePath)) return executablePath;
+    }
+  }
+
+  return chromium.executablePath();
+}
+
 let context;
 let resolveStopSignal;
 let accountPageOpening = false;
@@ -72,7 +105,7 @@ async function main() {
   }
   fs.mkdirSync(automationDataDirectory, { recursive: true });
 
-  const executablePath = chromium.executablePath();
+  const executablePath = findBundledChromiumExecutable();
   console.log(`Chromium 路径：${executablePath}`);
   if (!fs.existsSync(executablePath)) {
     throw new Error(`找不到应用自带的 Chromium：${executablePath}`);

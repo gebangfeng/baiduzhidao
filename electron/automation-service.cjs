@@ -160,7 +160,7 @@ class AutomationAnswerService {
     }
     const child = fork(path.join(__dirname, fileName), [], {
       cwd: workerCwd,
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", PLAYWRIGHT_BROWSERS_PATH: "0", ...env },
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", PLAYWRIGHT_BROWSERS_PATH: this.playwrightBrowsersPath(), ...env },
       silent: true,
     });
     this.appendStream(child.stdout, "info", account);
@@ -297,6 +297,8 @@ class AutomationAnswerService {
     const isWorkbench = type === "workbench";
     const child = this.forkWorker("automation-history-worker.cjs", account, {
       AUTOMATION_DATA_DIR: dataDirectory,
+      PLAYWRIGHT_BROWSERS_PATH: this.playwrightBrowsersPath(),
+      USE_BUNDLED_CHROMIUM: "1",
       INITIAL_PAGE_URL: isWorkbench ? "https://zhidao.baidu.com/b/batch/batch-upload" : "https://zhidao.baidu.com/ihome/homepage/myanwser",
       INITIAL_PAGE_LABEL: isWorkbench ? "答主工作台" : "答题记录页面",
     });
