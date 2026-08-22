@@ -48,17 +48,12 @@
       "electron/**/*",
       "node_modules/playwright/**/*",
       "node_modules/playwright-core/**/*",
-      "!node_modules/playwright-core/.local-browsers/**/*",
       "package.json"
     ],
     "extraResources": [
       {
         "from": "使用说明.txt",
         "to": "使用说明.txt"
-      },
-      {
-        "from": "node_modules/playwright-core/.local-browsers",
-        "to": "playwright-browsers"
       }
     ],
     "win": {

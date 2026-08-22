@@ -169,9 +169,6 @@ class AutomationAnswerService {
   }
 
   playwrightBrowsersPath() {
-    if (this.app.isPackaged) {
-      return path.join(process.resourcesPath, "playwright-browsers");
-    }
     return "0";
   }
 
