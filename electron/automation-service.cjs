@@ -169,6 +169,10 @@ class AutomationAnswerService {
   }
 
   playwrightBrowsersPath() {
+    if (this.app.isPackaged) {
+      const bundledPath = path.join(process.resourcesPath, "playwright-browsers");
+      if (fs.existsSync(bundledPath)) return bundledPath;
+    }
     return "0";
   }
 

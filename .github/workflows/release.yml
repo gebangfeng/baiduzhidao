@@ -98,7 +98,7 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
         run: |
-          pnpm exec electron-builder --mac dir --arm64 --publish never
+          node scripts/pack-mac-ci.cjs arm64
           node scripts/create-mac-dmg.cjs arm64
 
       - uses: actions/upload-artifact@v4
@@ -142,7 +142,7 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
         run: |
-          pnpm exec electron-builder --mac dir --x64 --publish never
+          node scripts/pack-mac-ci.cjs x64
           node scripts/create-mac-dmg.cjs x64
 
       - uses: actions/upload-artifact@v4
