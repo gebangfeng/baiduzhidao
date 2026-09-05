@@ -16,8 +16,8 @@
     "test:database": "cross-env ELECTRON_RUN_AS_NODE=1 node_modules/electron/dist/electron.exe scripts/database-test.cjs",
     "pack:win": "vite build && electron-builder --win nsis",
     "pack:win:configurable-api": "vite build && node scripts/pack-configurable-api.cjs nsis",
-    "pack:mac": "vite build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ electron-builder --mac dir --arm64 && node scripts/create-mac-dmg.cjs arm64",
-    "pack:mac:dir": "vite build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ electron-builder --mac dir --arm64",
+    "pack:mac": "vite build && node scripts/pack-mac-ci.cjs arm64 && node scripts/create-mac-dmg.cjs arm64",
+    "pack:mac:dir": "vite build && node scripts/pack-mac-ci.cjs arm64",
     "pack:portable": "vite build && electron-builder --win portable",
     "pack:portable:configurable-api": "vite build && node scripts/pack-configurable-api.cjs portable",
     "update:manifest": "node scripts/generate-update-manifest.cjs"

@@ -49,6 +49,12 @@ pnpm pack:portable
 
 生成文件位于 `release` 目录。
 
+## macOS 打包
+
+在 Apple Silicon Mac 上运行 `pnpm pack:mac`，生成包含 Chromium 的 ARM64 应用和 DMG。仅生成应用目录可运行 `pnpm pack:mac:dir`。
+
+如果应用已经打包完成、仅 DMG 创建失败，可运行 `node scripts/create-mac-dmg.cjs arm64` 重建镜像，无需重新构建应用。脚本先创建 HFS+ 可写镜像，复制完成并卸载后再压缩、校验；短暂的资源占用会自动重试。成功后清理临时文件，失败时保留原有的正式 DMG。
+
 ## 软件更新
 
 更新清单固定使用 `https://bd.aiserve.top/latest.json`，无需用户配置。正式安装版启动后会自动检测；发现新版本后可下载，并重启静默安装。开发模式不会执行更新。
