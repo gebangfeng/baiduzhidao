@@ -1,5 +1,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import categoryConfig from "../electron/automation-categories.json";
+
+const answerCategories = categoryConfig.categories;
 
 const props = defineProps({ globalSettings: { type: Object, default: () => ({}) } });
 const emit = defineEmits(["open-settings"]);
@@ -67,6 +70,7 @@ async function startSelected() {
       accountName: account.name,
       submissionLimit: Number(account.submissionLimit),
       startPage: Number(account.startPage),
+      category: account.category,
     });
     account.running = true;
     account.statusMessage = "正在启动浏览器";
@@ -192,7 +196,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="automation-page">
     <section class="automation-summary">
-      <div><span>AUTOMATION</span><h2>百度知道自动答题</h2><p>自动读取情感类问题，调用当前全局AI模型生成回答，并在可见浏览器中提交。</p></div>
+      <div><span>AUTOMATION</span><h2>百度知道自动答题</h2><p>按所选分类读取问题，调用当前全局AI模型生成回答，并在可见浏览器中提交。</p></div>
       <div class="summary-metrics"><div><strong>{{ accounts.length }}</strong><span>账号</span></div><div><strong>{{ runningCount }}/{{ maxConcurrent }}</strong><span>运行中</span></div><div><strong>{{ selectedAccount?.processedCount || 0 }}</strong><span>已处理</span></div></div>
     </section>
     <section v-if="selectedAccount" class="automation-panel tools-panel">
@@ -216,6 +220,7 @@ onBeforeUnmount(() => {
         <label class="automation-field"><span>当前百度账号</span><select v-model="selectedAccountId" :disabled="busy"><option v-for="account in accounts" :key="account.id" :value="account.id">{{ account.name }}{{ account.running ? " · 运行中" : "" }}</option></select></label>
         <template v-if="selectedAccount">
           <label class="automation-field"><span>账号名称</span><input v-model.trim="selectedAccount.name" maxlength="30" :disabled="selectedAccount.running || busy" /></label>
+          <label class="automation-field"><span>答题分类</span><select v-model="selectedAccount.category" :disabled="selectedAccount.running || busy" @change="selectedAccount.startPage = 1"><option v-for="category in answerCategories" :key="category.id" :value="category.id">{{ category.label }}</option></select></label>
           <div class="number-fields">
             <label class="automation-field"><span>每轮回答数量</span><input v-model.number="selectedAccount.submissionLimit" type="number" min="1" max="100" :disabled="selectedAccount.running || busy" /></label>
             <label class="automation-field"><span>起始页码</span><input v-model.number="selectedAccount.startPage" type="number" min="1" :disabled="selectedAccount.running || busy" /></label>

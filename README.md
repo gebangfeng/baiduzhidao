@@ -19,8 +19,13 @@ Windows 本地客户端，用于把“资源名称 + 百度网盘链接”的 Ex
 
 ```powershell
 pnpm install
+pnpm install:browser
 pnpm dev
 ```
+
+首次运行自动化答题前，需要执行 `pnpm install:browser`，将 Chromium 下载到项目内部。仅执行 `pnpm install` 不会安装浏览器。若提示“找不到应用自带的 Chromium”，或升级 Playwright 后浏览器缺失，请重新执行此命令；本地打包前也需要安装目标平台的浏览器。
+
+自动化答题的“账号与运行设置”中可选择人物类、教育类、情感类或综合类，默认为情感类。启动时会保存当前账号的分类，切换分类会将起始页码重置为第 1 页，运行中不可更改分类。
 
 ## 检查
 

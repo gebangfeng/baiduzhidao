@@ -1,6 +1,17 @@
 const { chromium } = require("playwright");
 const fs = require("fs");
 const path = require("path");
+const {
+  ANSWER_SELECTORS,
+  getQuestionCards,
+  waitForQuestionList,
+  selectAnswerCategory,
+  getTotalListPages,
+  ensureListPageNumber,
+} = require("./automation-answer-page.cjs");
+
+const { getAnswerCategory } = require("./automation-categories.cjs");
+const ANSWER_CATEGORY = getAnswerCategory(process.env.ANSWER_CATEGORY);
 
 const TARGET_URL =
   process.argv[2] || "https://zhidao.baidu.com/hd/21th_activity/";
@@ -402,7 +413,7 @@ async function generateAnswer(questionTitle) {
               },
               {
                 role: "user",
-                content: `请回答下面这个百度知道问题，只输出回答正文：\n\n${questionTitle}`,
+                content: `请回答下面这个百度知道${ANSWER_CATEGORY.label}问题，只输出回答正文：\n\n${questionTitle}`,
               },
             ],
           }),
@@ -491,86 +502,6 @@ function removeAnswerSectionLabels(value) {
     .trim();
 }
 
-async function selectEmotionCategory(page) {
-  const emotionCategory = page.getByText("情感类", { exact: true }).first();
-  await emotionCategory.waitFor({
-    state: "visible",
-    timeout: 30_000,
-  });
-
-  const titlesBeforeClick = await page
-    .locator(".answer-section__question-title")
-    .allTextContents();
-  const wasAlreadyActive = await emotionCategory.evaluate((element) =>
-    element.classList.contains("is-active"),
-  );
-
-  await emotionCategory.click();
-  await page.locator(".answer-section__tab--1.is-active").waitFor({
-    state: "visible",
-    timeout: 30_000,
-  });
-
-  if (!wasAlreadyActive && titlesBeforeClick.length > 0) {
-    await page.waitForFunction(
-      (previousTitles) => {
-        const currentTitles = Array.from(
-          document.querySelectorAll(".answer-section__question-title"),
-        ).map((element) => element.textContent?.trim() || "");
-        return JSON.stringify(currentTitles) !== JSON.stringify(previousTitles);
-      },
-      titlesBeforeClick,
-      { timeout: 30_000 },
-    );
-  }
-
-  await page.locator(".answer-section__question").first().waitFor({
-    state: "visible",
-    timeout: 30_000,
-  });
-  console.log("已选择情感类。");
-}
-
-async function getActiveListPageNumber(page) {
-  const activePageText = await page
-    .locator(".answer-section__pager-num.is-active")
-    .textContent();
-  return Number.parseInt(activePageText || "", 10);
-}
-
-async function getTotalListPages(page) {
-  const jumpInput = page.locator(".answer-section__pager-jump-input");
-  const placeholder = (await jumpInput.getAttribute("placeholder")) || "";
-  const matchedNumber = placeholder.match(/\d+/);
-  return matchedNumber ? Number.parseInt(matchedNumber[0], 10) : null;
-}
-
-async function ensureListPageNumber(page, expectedPageNumber) {
-  const activePageNumber = await getActiveListPageNumber(page);
-  if (activePageNumber === expectedPageNumber) return;
-
-  const jumpInput = page.locator(".answer-section__pager-jump-input");
-  await jumpInput.fill(String(expectedPageNumber));
-  await jumpInput.press("Enter");
-  await jumpInput.blur().catch(() => {});
-
-  await page.waitForFunction(
-    (pageNumber) => {
-      const activePage = document.querySelector(
-        ".answer-section__pager-num.is-active",
-      );
-      return activePage?.textContent?.trim() === String(pageNumber);
-    },
-    expectedPageNumber,
-    { timeout: 30_000 },
-  );
-  await page.locator(".answer-section__question").first().waitFor({
-    state: "visible",
-    timeout: 30_000,
-  });
-  console.log(`已恢复到情感类第 ${expectedPageNumber} 页。`);
-}
-
 async function submitAnswer(questionPage, answerText) {
   const answerTrigger = questionPage.getByText("回答", { exact: true }).first();
   await answerTrigger.waitFor({
@@ -633,10 +564,7 @@ async function returnToQuestionList(listPage, newlyOpenedPage, listUrl) {
       });
     }
 
-    await listPage.locator(".answer-section__question").first().waitFor({
-      state: "visible",
-      timeout: 15_000,
-    });
+    await waitForQuestionList(listPage, 15_000);
     console.log("已返回答题列表。");
     return true;
   } catch (error) {
@@ -649,10 +577,7 @@ async function returnToQuestionList(listPage, newlyOpenedPage, listUrl) {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
     });
-    await listPage.locator(".answer-section__question").first().waitFor({
-      state: "visible",
-      timeout: 30_000,
-    });
+    await waitForQuestionList(listPage, 30_000);
     console.log("答题列表已重新载入。");
     return true;
   } catch (error) {
@@ -665,7 +590,7 @@ async function openNextAnswerableQuestion(
   listPage,
   visitedQuestionTitles,
 ) {
-  const questionCards = listPage.locator(".answer-section__question");
+  const questionCards = getQuestionCards(listPage);
   try {
     await questionCards.first().waitFor({
       state: "visible",
@@ -685,11 +610,11 @@ async function openNextAnswerableQuestion(
     if (!(await card.isVisible())) continue;
 
     const title = (
-      (await card.locator(".answer-section__question-title").textContent()) || ""
+      (await card.locator(ANSWER_SELECTORS.title).textContent()) || ""
     )
       .replace(/\s+/g, " ")
       .trim();
-    const button = card.locator(".answer-section__btn", {
+    const button = card.locator(ANSWER_SELECTORS.button, {
       hasText: /^\s*去答题\s*$/,
     });
 
@@ -822,14 +747,14 @@ async function main() {
 
   while (true) {
     ensureNotStopped();
-    await selectEmotionCategory(page);
+    await selectAnswerCategory(page, ANSWER_CATEGORY.id, ensureNotStopped);
 
     if (!totalListPages) {
       totalListPages = await getTotalListPages(page);
       if (!totalListPages) {
         throw new Error("无法从分页输入框读取总页数。");
       }
-      console.log(`情感类共 ${totalListPages} 页。`);
+      console.log(`${ANSWER_CATEGORY.label}共 ${totalListPages} 页。`);
       if (currentListPage > totalListPages) {
         throw new Error(
           `起始页码 ${currentListPage} 超出总页数 ${totalListPages}。`,

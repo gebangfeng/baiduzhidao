@@ -2,6 +2,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { fork } = require("node:child_process");
+const { defaultCategory, getAnswerCategory } = require("./automation-categories.cjs");
 
 const MAX_CONCURRENT_ACCOUNTS = 3;
 
@@ -21,7 +22,7 @@ class AutomationAnswerService {
     return {
       version: 1,
       selectedAccountId: "default",
-      accounts: [{ id: "default", name: "默认账号", submissionLimit: 10, startPage: 1 }],
+      accounts: [{ id: "default", name: "默认账号", submissionLimit: 10, startPage: 1, category: defaultCategory }],
     };
   }
 
@@ -58,6 +59,7 @@ class AutomationAnswerService {
       name: account.name,
       submissionLimit: Number(account.submissionLimit) || 10,
       startPage: Number(account.startPage) || 1,
+      category: getAnswerCategory(account.category).id,
       running: this.automationProcesses.has(account.id),
       browserOpen: this.browserProcesses.has(account.id),
       processedCount: this.processedCount(account.id),
@@ -87,7 +89,7 @@ class AutomationAnswerService {
     if (!cleanName) throw new Error("账号名称不能为空");
     const state = this.loadState();
     if (state.accounts.length >= 20) throw new Error("最多创建20个账号配置");
-    const account = { id: crypto.randomUUID(), name: cleanName, submissionLimit: 10, startPage: 1 };
+    const account = { id: crypto.randomUUID(), name: cleanName, submissionLimit: 10, startPage: 1, category: defaultCategory };
     state.accounts.push(account);
     state.selectedAccountId = account.id;
     this.saveState(state);
@@ -120,10 +122,11 @@ class AutomationAnswerService {
     const name = String(input?.accountName || account.name).replace(/\s+/g, " ").trim().slice(0, 30);
     const submissionLimit = Number(input?.submissionLimit);
     const startPage = Number(input?.startPage);
+    const category = getAnswerCategory(input?.category ?? account.category).id;
     if (!name) throw new Error("账号名称不能为空");
     if (!Number.isInteger(submissionLimit) || submissionLimit < 1 || submissionLimit > 100) throw new Error("每轮回答数量必须为1～100");
     if (!Number.isInteger(startPage) || startPage < 1) throw new Error("起始页码必须大于或等于1");
-    Object.assign(account, { name, submissionLimit, startPage });
+    Object.assign(account, { name, submissionLimit, startPage, category });
     state.selectedAccountId = account.id;
     this.saveState(state);
     return account;
@@ -223,6 +226,7 @@ class AutomationAnswerService {
       ANSWER_SYSTEM_PROMPT: String(settings.answerPrompt || ""),
       AI_SUBMISSION_LIMIT: String(account.submissionLimit),
       START_PAGE: String(account.startPage),
+      ANSWER_CATEGORY: account.category,
       AUTOMATION_DATA_DIR: dataDirectory,
       AI_LOCK_FILE: path.join(this.app.getPath("userData"), "answer-automation", "ai-request.lock"),
       PLAYWRIGHT_BROWSERS_PATH: this.playwrightBrowsersPath(),

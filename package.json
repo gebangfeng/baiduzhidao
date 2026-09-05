@@ -7,6 +7,8 @@
   "author": "Local User",
   "license": "UNLICENSED",
   "scripts": {
+    "install:browser": "cross-env PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium",
+    "test:automation-page": "node scripts/automation-category-config-test.cjs && node scripts/automation-answer-page-test.cjs",
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
     "license:server": "npm --prefix license-server start",
     "build:renderer": "vite build",

@@ -1,0 +1,9 @@
+{
+  "defaultCategory": "emotion",
+  "categories": [
+    { "id": "celebrity", "label": "人物类" },
+    { "id": "education", "label": "教育类" },
+    { "id": "emotion", "label": "情感类" },
+    { "id": "general", "label": "综合类" }
+  ]
+}
