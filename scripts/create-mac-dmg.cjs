@@ -19,6 +19,13 @@ function run(command, args, { retryBusy = false } = {}) {
     if (result.stderr) process.stderr.write(result.stderr);
     if (result.error) throw result.error;
     if (result.status === 0) return result.stdout;
+    const detachTargetGone = command === "hdiutil" && args[0] === "detach" &&
+      /no such file or directory|不存在|找不到/i.test(
+        `${result.stdout || ""}\n${result.stderr || ""}`,
+      );
+    // A detach may return a timeout after DiskArbitration already removed the
+    // mount. Treat a subsequent "no such file" response as successful.
+    if (detachTargetGone) return result.stdout;
     const transientDetach = command === "hdiutil" && args[0] === "detach" &&
       /timeout|timed out|diskarbitration|未能卸载|无法卸载/i.test(
         `${result.stdout || ""}\n${result.stderr || ""}`,
