@@ -179,7 +179,10 @@ function ensureNotStopped() {
 }
 
 async function enterAnswerAreaAfterLogin(context, page) {
-  const answerArea = page.getByText("答题区", { exact: true }).first();
+  // The activity page no longer renders a literal "答题区" label.  The
+  // usable post-login marker is the answer section itself (the category tabs
+  // and question list are rendered inside it).
+  const answerArea = page.locator(ANSWER_SELECTORS.section).first();
   const loginDeadline = Date.now() + 15 * 60_000;
   let loginPromptShown = false;
   let lastRefreshTime = 0;
@@ -207,28 +210,11 @@ async function enterAnswerAreaAfterLogin(context, page) {
 
     if (
       isLoggedIn &&
-      (await answerArea.isVisible().catch(() => false))
+      (await answerArea.isVisible().catch(() => false)) &&
+      !page.url().includes("passport.baidu.com")
     ) {
-      try {
-        await answerArea.click({
-          timeout: 10_000,
-          noWaitAfter: true,
-        });
-        await page.waitForTimeout(1_000);
-
-        if (!page.url().includes("passport.baidu.com")) {
-          console.log("已检测到登录状态并选择答题区。");
-          return;
-        }
-        console.log("页面仍在登录流程中，继续等待登录完成。");
-      } catch (error) {
-        if (page.isClosed()) {
-          const closedError = new Error("浏览器窗口已关闭。");
-          closedError.name = "AutomationStoppedError";
-          throw closedError;
-        }
-        console.log("答题区尚未稳定显示，继续等待登录完成。");
-      }
+      console.log("已检测到登录状态，答题区已加载。");
+      return;
     }
 
     if (isLoggedIn && Date.now() - lastRefreshTime >= 10_000) {
