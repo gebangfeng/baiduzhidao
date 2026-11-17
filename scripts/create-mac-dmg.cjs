@@ -19,8 +19,12 @@ function run(command, args, { retryBusy = false } = {}) {
     if (result.stderr) process.stderr.write(result.stderr);
     if (result.error) throw result.error;
     if (result.status === 0) return result.stdout;
+    const transientDetach = command === "hdiutil" && args[0] === "detach" &&
+      /timeout|timed out|diskarbitration|未能卸载|无法卸载/i.test(
+        `${result.stdout || ""}\n${result.stderr || ""}`,
+      );
     const busy = result.status === 16 || /resource busy|资源忙|资源正忙|资源繁忙/i.test(result.stderr || "");
-    if (retryBusy && busy && attempt < 4) {
+    if (retryBusy && (busy || transientDetach) && attempt < 4) {
       console.log(`磁盘镜像暂时被占用，${attempt} 秒后重试（${attempt}/3）。`);
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, attempt * 1000);
       continue;
@@ -56,7 +60,14 @@ function main() {
     run("hdiutil", ["attach", writableImage, "-mountpoint", mountPath, "-nobrowse", "-noautoopen"], { retryBusy: true });
     run("ditto", [appPath, path.join(mountPath, `${productName}.app`)]);
     fs.symlinkSync("/Applications", path.join(mountPath, "应用程序"));
-    run("hdiutil", ["detach", mountPath], { retryBusy: true });
+    try {
+      run("hdiutil", ["detach", mountPath], { retryBusy: true });
+    } catch (error) {
+      // DiskArbitration can leave a cleanly closed image attached briefly.
+      // A forced detach is safe here because all writes completed already.
+      console.warn(`普通卸载超时，尝试强制卸载：${error.message}`);
+      run("hdiutil", ["detach", "-force", mountPath], { retryBusy: true });
+    }
     run("hdiutil", ["convert", writableImage, "-format", "UDZO", "-o", compressedImage, "-ov"], { retryBusy: true });
     run("hdiutil", ["verify", compressedImage]);
     fs.renameSync(compressedImage, dmgPath);
